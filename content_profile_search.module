@@ -38,8 +38,6 @@ function content_profile_perm() {
 function content_profile_search_admin_settings() {
   $form = array();
 
-  // $nodes = content_profile_search_nodes();
-
   // The admin interface lists all fields, but search only processes those the user may view.
   $fields = content_profile_search_fields(FALSE);
 
@@ -282,6 +280,9 @@ function content_profile_search_form_process($form_state) {
       $roles[] = $key;
     }
   }
+
+  // TODO: Allow search for ALL or ANY (AND / OR) if multiple words are entered in search string.
+  // TODO: Spit dummy if the number of search fields is too big and would make MySQL do poo.
 
   // Start assembling the search query.
   $query = 'SELECT DISTINCT(u.uid), u.name, u.mail';
