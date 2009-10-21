@@ -1,0 +1,9 @@
+<?php
+/**
+ * Implementation of hook_uninstall to remove variables.
+ */
+function content_profile_search_uninstall() {
+  variable_del('content_profile_search_filter_collapse');
+  variable_del('content_profile_search_default_fields');
+  variable_del('content_profile_search_default_roles');
+}

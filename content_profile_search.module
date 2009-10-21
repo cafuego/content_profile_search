@@ -1,0 +1,368 @@
+<?php
+
+/**
+ * Implementation of hook_menu()
+ */
+function content_profile_search_menu() {
+  $items = array();
+
+  $items['admin/settings/content_profile_search'] = array(
+    'title' => 'Content Profile Search Settings',
+    'description' => 'Change settings for the content_profile_search module',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('content_profile_search_admin_settings'),
+    'access arguments' => array('administer content profile search'),
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['admin/user/user/content_profile_search'] = array(
+    'title' => 'Search users and profiles',
+    'description' => 'Search users and content profile text fields',
+    'page callback' => 'content_profile_search',
+    'access arguments' => array('search content profile fields'),
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_perm.
+ */
+function content_profile_perm() {
+  return array('administer content profile search', 'search content profile fields');
+}
+
+/**
+ * Display the settings form.
+ */
+function content_profile_search_admin_settings() {
+  $form = array();
+
+  // $nodes = content_profile_search_nodes();
+
+  // The admin interface lists all fields, but search only processes those the user may view.
+  $fields = content_profile_search_fields(FALSE);
+
+  $form['content_profile_search_defaults'] = array(
+    '#title' => 'Defaults',
+    '#description' => t('Set defaults for the user and profile search form.'),
+    '#type' => 'fieldset',
+  );
+
+  $form['content_profile_search_defaults']['content_profile_search_filter_collapse'] = array(
+    '#title' => 'Collapse Filters',
+    '#description' => t('Should the filters field be collapsed on the search page.'),
+    '#type' => 'radios',
+    '#options' => array(
+      0 => 'Not collapsed',
+      1 => 'Collapsed',
+    ),
+    '#default_value' => variable_get('content_profile_search_filter_collapse', 0),
+  );
+
+  if (count($fields)) {
+    $form['content_profile_search_defaults']['content_profile_search_default_fields'] = array(
+      '#title' => 'Default Fields',
+      '#description' => t('Select any fields that you want searched by default. The login name and email address fields are always searched.'),
+      '#type' => 'checkboxes',
+      '#options' => $fields,
+      '#default_value' => variable_get('content_profile_search_default_fields', array()),
+    );
+
+    $roles = content_profile_search_roles();
+    if (count($roles)) {
+      $form['content_profile_search_defaults']['content_profile_search_default_roles'] = array(
+        '#title' => 'Default Roles',
+        '#description' => t('Select any roles you want limit results to.'),
+        '#type' => 'checkboxes',
+        '#options' => $roles,
+        '#default_value' => variable_get('content_profile_search_default_roles', array()),
+      );
+    }
+    else {
+      $form['content_profile_search_defaults']['content_profile_search_no_custom_roles'] = array(
+        '#title' => 'Default Roles',
+        '#value' => t('No custom roles have been defined. Authenticated users searched by default.'),
+        '#type' => 'markup',
+      );
+    }
+  }
+  else {
+    drupal_set_message(t('You have not yet defined any content profile text fields.'), 'error');
+  }
+
+  return system_settings_form($form);
+}
+
+/**
+ * Content profile search form render helper.
+ */
+function content_profile_search() {
+  return drupal_get_form('content_profile_search_form');
+}
+
+/**
+ * Helper that returns a list of defined TEXT fields in content_profile nodes.
+ *
+ * @param $check_access
+ *   If true, only return fields the current user may view.
+ */
+function content_profile_search_fields($check_access = TRUE) {
+
+  $query = "SELECT cnf.field_name AS field_name, cnfi.label AS label FROM {content_node_field} AS cnf LEFT JOIN {content_node_field_instance} AS cnfi USING(field_name) WHERE cnf.type='text' ORDER BY cnfi.weight ASC";
+  $result = db_query($query);
+  $fields = array();
+  while ($field = db_fetch_array($result)) {
+    // If we need to do an access check
+    //   AND the content_perms module exists
+    //   AND we aren't allowed to view the field
+    // Then skip to the next query result.
+    if ($check_access && module_exists('content_permissions') && !content_access('view', $field)) {
+      continue;
+    }
+    $fields[$field['field_name']] = $field['label'];
+  }
+  return $fields;
+}
+
+/**
+ * Custom user search form. This function displays the form as well as
+ * any search results.
+ *
+ * @param $form_state
+ *   Pass the submission state of the form, so controls can be rebuilt
+ *   and the actual search can be performed, with results displayed in
+ *   the form.
+ */
+function content_profile_search_form($form_state) {
+
+  $form['#redirect'] = FALSE;
+
+  $form['content_profile_search']['string'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Search',
+    '#description' => t('Enter arbitrary text to search all checked content_profile fields for.'),
+  );
+  $form['content_profile_search']['filters'] = array(
+    '#type' => 'fieldset',
+    '#title' => 'Filters',
+    '#description' => '',
+    '#collapsible' => TRUE,
+    '#collapsed' => (variable_get('content_profile_search_filter_collapse', 0) == 1) ? TRUE : FALSE,
+  );
+  $form['content_profile_search']['filters']['fields'] = array(
+    '#type' => 'checkboxes',
+    '#title' => 'Search fields',
+    '#description' => t('Check all the fields that you wish to search. The login name and email address fields are always searched.'),
+    '#options' => content_profile_search_fields(TRUE),
+  );
+
+  // Do not display the roles filter if there are no roles to filter by.
+  $roles = content_profile_search_roles();
+  if (count($roles)) {
+    $form['content_profile_search']['filters']['roles'] = array(
+      '#type' => 'checkboxes',
+      '#title' => 'User roles',
+      '#description' => t('Check any roles you wish to limit results by.'),
+      '#options' => $roles,
+    );
+  }
+
+  // If the form was submitted, perform the search and set proper defaults.
+  // Otherwise, enable default fields and roles as defined in settings.
+  if ($form_state['submitted'] == TRUE) {
+    $form['content_profile_search']['string']['#default_value'] = $form_state['values']['string'];
+    $form['content_profile_search']['filters']['fields']['#default_value'] = content_profile_search_defaults($form_state, 'fields');
+    $form['content_profile_search']['filters']['roles']['#default_value'] = content_profile_search_defaults($form_state, 'roles');
+    $form['content_profile_search']['result'] = array(
+      '#type' => 'markup',
+      '#value' => content_profile_search_form_process($form_state),
+    );
+  }
+  else {
+    $form['content_profile_search']['filters']['fields']['#default_value'] = variable_get('content_profile_search_default_fields', array());
+    $form['content_profile_search']['filters']['roles']['#default_value'] = variable_get('content_profile_search_default_roles', array());
+  }
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('List Users'),
+  );
+
+  return $form;
+}
+
+/**
+ * Returns a list of custom roles that the user (or other modules) added
+ * to drupal.
+ */
+function content_profile_search_roles() {
+  $roles = user_roles(TRUE);
+  unset($roles[DRUPAL_AUTHENTICATED_RID]);
+  return $roles;
+}
+
+/**
+ * Creates an array of selected values for the given form field.
+ *
+ * @param $form_state
+ *   Submission state of the form.
+ * @param $field
+ *   The field in $form_state['values'] that we want values for.
+ */
+function content_profile_search_defaults($form_state, $field) {
+  $ret = array();
+
+  // Loop through the submitted form data to see which fields need to be checked.
+  if (isset($form_state['submitted'])) {
+    foreach ($form_state['values'][$field] as $key => $val) {
+      if ($val) {
+        $ret[] = $val;
+      }
+    }
+  }
+  else {
+    $ret = variable_get('content_profile_search_default_' . $field, '');
+  }
+
+  return $ret;
+}
+
+/**
+ * Form submit handler that rebuilds the form.
+ *
+ * @param $form
+ *   The form array.
+ * @param $form_state
+ *   Submission state of the form.
+ */
+function content_profile_search_form_submit($form, &$form_state) {
+  $form_state['rebuild'] = TRUE;
+}
+
+/**
+ * Perform the search and returned a themed table of results.
+ *
+ * @param $form_state
+ *   The submitted form values.
+ */
+function content_profile_search_form_process($form_state) {
+  global $user;
+
+  // Sanitise the string we're serahcing for.
+  $string = check_plain($form_state['values']['string']);
+
+  if (!$string) {
+    drupal_set_message(t('Not searching for an empty string'), 'warning');
+    return '';
+  }
+
+  // Parse fields that we need to search through.
+  $field_list = array();
+  foreach ($form_state['values']['fields'] as $key => $val) {
+    if ($val) {
+      $field_list[] = $key;
+    }
+  }
+
+  // If any fields were selected, create an array of fields and their
+  // associated node types.
+  $nodes = array();
+  if (count($field_list)) {
+    $result = db_query("SELECT field_name, type_name FROM {content_node_field_instance} WHERE field_name IN('" . implode("', '", $field_list) . "')");
+    while ($row = db_fetch_array($result)) {
+      $nodes[$row['type_name']][] = $row['field_name'];
+    }
+  }
+
+  // Parse roles.
+  $roles = array();
+  foreach ($form_state['values']['roles'] as $key => $val) {
+    if ($val) {
+      $roles[] = $key;
+    }
+  }
+
+  // Start assembling the search query.
+  $query = 'SELECT DISTINCT(u.uid), u.name, u.mail';
+
+  // Add each of the fields we need to search.
+  if (count($nodes)) {
+    foreach ($nodes as $node => $fields) {
+      foreach ($fields as $field) {
+        $query .= ', {content_type_' . $node . '}.' . $field . '_value';
+      }
+    }
+  }
+
+  // Always search this table.
+  $query .= ' FROM {users} AS u';
+
+  // Join each content_profile node type via its owner uid.
+  if (count($nodes)) {
+    foreach($nodes as $node => $fields) {
+      $query .= ' JOIN {node} AS n_' . $node . ' ON(n_' . $node . '.uid=u.uid)';
+      $query .= ' JOIN {content_type_' . $node . '} ON({content_type_' . $node . '}.nid=n_' . $node . '.nid)';
+    }
+  }
+
+  // If we need to filter by role...
+  if (count($roles)) {
+    $query .= ' JOIN {users_roles} AS ur ON(u.uid=ur.uid)';
+  }
+
+  // Always search login name and email address.
+  $query .= " WHERE (u.name LIKE '%%%s%%' OR u.mail LIKE '%%%s%%'";
+
+  // For each field we're searching, add the string to the args array, so
+  // we can pass that into db_query later.
+  $args = array($string, $string);
+
+  // Foreach node type we're searching add an OR clause and add the string to $args.
+  if (count($nodes)) {
+    foreach ($nodes as $node => $fields) {
+      foreach ($fields as $field) {
+        $query .= ' OR {content_type_' . $node .'}.'. $field . "_value LIKE '%%%s%%'";
+        $args[] = $string;
+      }
+    }
+  }
+
+  // And filter by role if required.
+  if (count($roles)) {
+    $query .= ') AND ur.rid IN(' . implode(',', $roles) . ')';
+  }
+  else {
+    $query .= ')';
+  }
+
+  // Run the search with our array of args.
+  $result = db_query($query, $args);
+
+  // Turn the result field login name into a link to the user account page.
+  $data = array();
+  while ($row = db_fetch_array($result)) {
+    $row['name'] = l($row['name'], 'user/' . $row['uid']);
+    $data[] = $row;
+  }
+
+  // Warn the user if no returns were found and bypass the table data creation.
+  if (!count($data)) {
+    drupal_set_message(t('No users matching "!string" were found', array('!string' => $string)), 'warning');
+    return '';
+  }
+
+  // TODO: pager the results, sortable columns.
+
+  // Make a pretty table header.
+  $header = array('ID', 'Name', 'Mail');
+  $all_fields = content_profile_search_fields(FALSE);
+
+  foreach ($nodes as $node => $fields) {
+    foreach ($fields as $field) {
+      $header[] = $all_fields[$field];
+    }
+  }
+
+  return theme('table', $header, $data);
+}

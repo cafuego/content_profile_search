@@ -1,0 +1,5 @@
+name = Content Profile Search
+description = Find and filter users by any content_profile text field or role.
+package = Content Profile
+core = 6.x
+dependencies[] = content_profile
