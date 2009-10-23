@@ -17,7 +17,7 @@ function content_profile_search_menu() {
   $items['admin/user/user/content_profile_search'] = array(
     'title' => 'Search users and profiles',
     'description' => 'Search users and content profile text fields',
-    'page callback' => 'content_profile_search',
+    'page callback' => 'content_profile_search_render_form',
     'access arguments' => array('search content profile fields'),
     'type' => MENU_LOCAL_TASK,
   );
@@ -95,7 +95,7 @@ function content_profile_search_admin_settings() {
 /**
  * Content profile search form render helper.
  */
-function content_profile_search() {
+function content_profile_search_render_form() {
   return drupal_get_form('content_profile_search_form');
 }
 
