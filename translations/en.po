@@ -1,0 +1,88 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: content_profile_search\n"
+"POT-Creation-Date: 2009-10-27 14:14+1100\n"
+"PO-Revision-Date: \n"
+"Last-Translator: Peter Lieverdink <me@cafuego.net>\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Language: English\n"
+
+#: content_profile_search.module:46
+msgid "Set defaults for the user and profile search form."
+msgstr "Set defaults for the user and profile search form."
+
+#: content_profile_search.module:52
+msgid "Should the filters field be collapsed on the search page."
+msgstr "Should the filters field be collapsed on the search page."
+
+#: content_profile_search.module:64
+msgid "Select any fields that you want searched by default. The login name and email address fields are always searched."
+msgstr "Select any fields that you want searched by default. The login name and email address fields are always searched."
+
+#: content_profile_search.module:74
+msgid "Select any roles you want limit results to."
+msgstr "Select any roles you want limit results to."
+
+#: content_profile_search.module:83
+msgid "No custom roles have been defined. Authenticated users searched by default."
+msgstr "No custom roles have been defined. Authenticated users searched by default."
+
+#: content_profile_search.module:89
+msgid "You have not yet defined any content profile text fields."
+msgstr "You have not yet defined any content profile text fields."
+
+#: content_profile_search.module:142
+msgid "Enter arbitrary text to search all checked content_profile fields for."
+msgstr "Enter arbitrary text to search all checked content_profile fields for."
+
+#: content_profile_search.module:154
+msgid "Check all the fields that you wish to search. The login name and email address fields are always searched."
+msgstr "Check all the fields that you wish to search. The login name and email address fields are always searched."
+
+#: content_profile_search.module:164
+msgid "Check any roles you wish to limit results by."
+msgstr "Check any roles you wish to limit results by."
+
+#: content_profile_search.module:187
+msgid "List Users"
+msgstr "List Users"
+
+#: content_profile_search.module:254
+msgid "Not searching for an empty string"
+msgstr "Not searching for an empty string"
+
+#: content_profile_search.module:352
+msgid "No users matching \"!string\" were found"
+msgstr "No users matching \"!string\" were found"
+
+#: content_profile_search.module:10
+msgid "Content Profile Search Settings"
+msgstr "Content Profile Search Settings"
+
+#: content_profile_search.module:11
+msgid "Change settings for the content_profile_search module"
+msgstr "Change settings for the content_profile_search module"
+
+#: content_profile_search.module:18
+msgid "Search users and profiles"
+msgstr "Search users and profiles"
+
+#: content_profile_search.module:19
+msgid "Search users and content profile text fields"
+msgstr "Search users and content profile text fields"
+
+#: content_profile_search.info:0
+msgid "Content Profile Search"
+msgstr "Content Profile Search"
+
+#: content_profile_search.info:0
+msgid "Find and filter users by any content_profile text field or role."
+msgstr "Find and filter users by any content_profile text field or role."
+
+#: content_profile_search.info:0
+msgid "Content Profile"
+msgstr "Content Profile"
+

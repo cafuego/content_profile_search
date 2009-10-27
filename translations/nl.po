@@ -1,0 +1,89 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: content_profile_search\n"
+"POT-Creation-Date: 2009-10-27 14:14+1100\n"
+"PO-Revision-Date: \n"
+"Last-Translator: Peter Lieverdink <me@cafuego.net>\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Language: Dutch\n"
+"X-Poedit-Country: nl\n"
+
+#: content_profile_search.module:46
+msgid "Set defaults for the user and profile search form."
+msgstr ""
+
+#: content_profile_search.module:52
+msgid "Should the filters field be collapsed on the search page."
+msgstr ""
+
+#: content_profile_search.module:64
+msgid "Select any fields that you want searched by default. The login name and email address fields are always searched."
+msgstr "Selekteer de velden die u standaard wilt doorzoeken. De gebruikersnaam en email adres worden altijd doorzocht."
+
+#: content_profile_search.module:74
+msgid "Select any roles you want limit results to."
+msgstr "Selekteer de rollen waarvoor u de resultaten wilt zien."
+
+#: content_profile_search.module:83
+msgid "No custom roles have been defined. Authenticated users searched by default."
+msgstr "Er zijn geen rollen gedefinieerd. Geregistreerde gebruikers worden standaard doorzocht."
+
+#: content_profile_search.module:89
+msgid "You have not yet defined any content profile text fields."
+msgstr "U heeft nog geen content profile tekst velden gedefinieerd"
+
+#: content_profile_search.module:142
+msgid "Enter arbitrary text to search all checked content_profile fields for."
+msgstr ""
+
+#: content_profile_search.module:154
+msgid "Check all the fields that you wish to search. The login name and email address fields are always searched."
+msgstr ""
+
+#: content_profile_search.module:164
+msgid "Check any roles you wish to limit results by."
+msgstr ""
+
+#: content_profile_search.module:187
+msgid "List Users"
+msgstr "Gebruikers Lijst"
+
+#: content_profile_search.module:254
+msgid "Not searching for an empty string"
+msgstr "Zoek niet naar een lege string"
+
+#: content_profile_search.module:352
+msgid "No users matching \"!string\" were found"
+msgstr "Geen gebruikers gevonden die \"!string\" bevatten"
+
+#: content_profile_search.module:10
+msgid "Content Profile Search Settings"
+msgstr "Content Profile Search Instellingen"
+
+#: content_profile_search.module:11
+msgid "Change settings for the content_profile_search module"
+msgstr "Verander instellingen voor de content_profile_search module"
+
+#: content_profile_search.module:18
+msgid "Search users and profiles"
+msgstr "Door zoek gebruikers en profielen"
+
+#: content_profile_search.module:19
+msgid "Search users and content profile text fields"
+msgstr "Doorzoek gebruikers en content profile velden"
+
+#: content_profile_search.info:0
+msgid "Content Profile Search"
+msgstr "Content Profile Search"
+
+#: content_profile_search.info:0
+msgid "Find and filter users by any content_profile text field or role."
+msgstr "Zoek en sorteer gebruikers via een content_profile tekst veld of rol"
+
+#: content_profile_search.info:0
+msgid "Content Profile"
+msgstr "Content Profile"
+
