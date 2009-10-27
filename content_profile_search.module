@@ -1,4 +1,5 @@
 <?php
+// $Id: content_profile_search.module,v 1.4 2009/10/27 03:45:13 cafuego Exp $
 
 /**
  * Implementation of hook_menu()

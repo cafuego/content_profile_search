@@ -1,3 +1,5 @@
+$Id: README.txt,v 1.2 2009/10/27 03:45:13 cafuego Exp $
+
 -- SUMMARY --
 
 The Drupal content_profile text search module allows users to search the

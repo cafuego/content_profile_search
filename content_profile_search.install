@@ -1,4 +1,6 @@
 <?php
+// $Id: content_profile_search.install,v 1.2 2009/10/27 03:45:13 cafuego Exp $
+
 /**
  * Implementation of hook_uninstall to remove variables.
  */

@@ -1,3 +1,4 @@
+; $Id: content_profile_search.info,v 1.2 2009/10/27 03:45:13 cafuego Exp $
 name = Content Profile Search
 description = Find and filter users by any content_profile text field or role.
 package = Content Profile
