@@ -1,5 +1,5 @@
 <?php
-// $Id: content_profile_search.module,v 1.5 2009/10/30 00:01:33 cafuego Exp $
+// $Id: content_profile_search.module,v 1.6 2009/10/30 00:54:28 cafuego Exp $
 
 /**
  * Implementation of hook_menu()
@@ -329,7 +329,7 @@ function content_profile_search_form_process($form_state) {
   // Join each content_profile node type via its owner uid.
   if (count($nodes)) {
     foreach ($nodes as $node => $fields) {
-      $query .= ' JOIN {node} AS n_' . $node . ' ON(n_' . $node . '.uid=u.uid)';
+      $query .= ' LEFT JOIN {node} AS n_' . $node . ' ON(n_' . $node . '.uid=u.uid AND n_' . $node . ".type='" . $node. "')";
       foreach ($fields as $num => $field) {
         // Now need to if the field is a multi - if so, it has its own content_$field
         // table that needs joining, instead of the content_type_$node one.
@@ -340,8 +340,8 @@ function content_profile_search_form_process($form_state) {
           // This is a bit ugly, but because we need to cycle through the node
           // types, we now need to make sure we don't join the content_type_$node
           // table twice and break the query.
-          if (strpos($query, ' JOIN {content_type_' . $node . '}') === FALSE) {
-            $query .= ' JOIN {content_type_' . $node . '} ON({content_type_' . $node . '}.nid=n_' . $node . '.nid)';
+          if (strpos($query, ' LEFT JOIN {content_type_' . $node . '}') === FALSE) {
+            $query .= ' LEFT JOIN {content_type_' . $node . '} ON({content_type_' . $node . '}.nid=n_' . $node . '.nid)';
           }
         }
       }
@@ -391,7 +391,7 @@ function content_profile_search_form_process($form_state) {
   // accept an array of args as parameter. Ouch.
 
   // Run the search with our array of args.
-  $result = db_query($query, $args);
+  $result = db_queryd($query, $args);
 
   // Turn the result field login name into a link to the user account page.
   $data = array();
