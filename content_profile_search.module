@@ -109,7 +109,22 @@ function content_profile_search_render_form() {
  */
 function content_profile_search_fields($check_access = TRUE) {
 
-  $query = "SELECT cnf.field_name AS field_name, cnf.multiple AS multiple, cnfi.type_name AS type_name, cnfi.label AS field_label FROM {content_node_field} AS cnf LEFT JOIN {content_node_field_instance} AS cnfi USING(field_name) WHERE cnf.type = 'text' ORDER BY cnfi.weight ASC";
+  $query = "/* Find eligible text field definitions */
+    SELECT
+      cnf.field_name AS field_name,
+      cnf.multiple AS multiple,
+      cnfi.type_name AS type_name,
+      cnfi.label AS field_label,
+      cnf.global_settings AS global_settings
+    FROM
+      {content_node_field} AS cnf
+    LEFT JOIN
+      {content_node_field_instance} AS cnfi USING(field_name)
+    WHERE
+      cnf.type = 'text'
+    ORDER BY
+      cnfi.weight ASC";
+
   $result = db_query($query);
   $fields = array();
   while ($field = db_fetch_array($result)) {
@@ -121,6 +136,7 @@ function content_profile_search_fields($check_access = TRUE) {
       continue;
     }
     $fields[$field['field_name']] = $field;
+    $fields[$field['field_name']]['allowed_values'] = content_profile_search_parse_allowed_values($field['global_settings']);
   }
   return $fields;
 }
@@ -354,21 +370,52 @@ function content_profile_search_form_process($form_state) {
   }
 
   // Always search login name and email address.
-  $query .= " WHERE (u.name OR u.mail";
+  $query .= " WHERE (u.name LIKE '%%%s%%' OR u.mail LIKE '%%%s%%'";
+
+  // Create an array of arguments to be passed to db_query().
+  $args = array($string, $string);
 
   // Foreach node type we're searching add an OR clause.
   if (count($nodes)) {
     foreach ($nodes as $node => $fields) {
       foreach ($fields as $field) {
+        $keys = array();
+        if ($field['allowed_values']) {
+          // We need to do a key lookup here. Find all keys for this field that are assigned
+          // to a value that matches $string.
+          // For extra pretty, we do a replace back to the string after we've found results.
+          foreach ($field['allowed_values'] as $key => $value) {
+            if (stristr($value, $string) !== FALSE) {
+              $keys[] = $key;
+            }
+          }
+        }
         if ($field['multiple']) {
-          $query .= ' OR {content_' . $field['field_name'] .'}.'. $field['field_name'] . "_value";
+          if ($field['allowed_values']) {
+            if ($keys) {
+              $query .= ' OR {content_' . $field['field_name'] .'}.'. $field['field_name'] . "_value IN ('%s')";
+              $args[] = implode("','", $keys);
+            }
+          }
+          else {
+            $query .= ' OR {content_' . $field['field_name'] .'}.'. $field['field_name'] . "_value LIKE '%%%s%%'";
+            $args[] = $string;
+          }
         }
         else {
-          $query .= ' OR {content_type_' . $node .'}.'. $field['field_name'] . "_value";
+          if ($field['allowed_values']) {
+            if ($keys) {
+              $query .= ' OR {content_type_' . $node .'}.'. $field['field_name'] . "_value IN ('%s')";
+              $args[] = implode("','", $keys);
+            }
+          }
+          else {
+            $query .= ' OR {content_type_' . $node .'}.'. $field['field_name'] . "_value LIKE '%%%s%%'";
+            $args[] = $string;
+          }
         }
       }
     }
-    $query .= " LIKE '%%%s%%'";
   }
 
   // And filter by role if required.
@@ -384,17 +431,29 @@ function content_profile_search_form_process($form_state) {
   $query .= ' GROUP BY u.uid';
 
   // Run the search.
-  $result = db_query($query, $string);
+  $result = db_queryd($query, $args);
 
   // Turn the result field login name into a link to the user account page.
   $data = array();
   while ($row = db_fetch_array($result)) {
     $row['name'] = l($row['name'], 'user/' . $row['uid']);
+
+    // If a field has allowed values and has found only an index key,
+    // display the associated value instead. That would be nice.
+    if (count($nodes)) {
+      foreach ($nodes as $node => $fields) {
+        foreach ($fields as $field) {
+          if ($field['allowed_values']) {
+            $row[$field['field_name'] . '_value'] = $field['allowed_values'][$row[$field['field_name'] . '_value']];
+          }
+        }
+      }
+    }
+
+    // Add the `fixed' result set to the output array.
     $data[] = $row;
   }
 
-  // TODO: If a field is processed PHP and has an index key, maybe eval() the code and
-  // display the associated value instead. That would be nice.
 
   // Warn the user if no returns were found and bypass the table data creation.
   if (!count($data)) {
@@ -415,4 +474,31 @@ function content_profile_search_form_process($form_state) {
   }
 
   return theme('table', $header, $data);
+}
+
+/**
+ * Helper to extract a keyed array of `allowed values' for a select/checkboxes field definition.
+ *
+ * @param $global_settings
+ *   The serialized field settings array.
+ */
+function content_profile_search_parse_allowed_values($global_settings) {
+  $settings = unserialize($global_settings);
+
+  $values = array();
+
+  if ($settings['allowed_values']) {
+    if (strpos($settings['allowed_values'], '|') !== FALSE) {
+      $pairs = explode("\n", $settings['allowed_values']);
+      foreach ($pairs as $pair) {
+        list($key, $val) = explode("|", $pair);
+        $values[$key] = $val;
+      }
+    }
+  }
+  else if ($settings['allowed_values_php']) {
+    $values = eval($settings['allowed_values_php']);
+  }
+
+  return $values;
 }
