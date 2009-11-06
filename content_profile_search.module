@@ -41,7 +41,7 @@ function content_profile_search_admin_settings() {
 
   // The admin interface lists all fields, but search only processes those the user may view.
   $fields = content_profile_search_fields(FALSE);
-  $options = content_profile_search_fields_options($fields);
+  $options = content_profile_search_fields_options($fields, TRUE);
 
   $form['content_profile_search_defaults'] = array(
     '#title' => 'Defaults',
@@ -123,6 +123,7 @@ function content_profile_search_fields($check_access = TRUE) {
     WHERE
       cnf.type = 'text'
     ORDER BY
+      cnfi.type_name ASC,
       cnfi.weight ASC";
 
   $result = db_query($query);
@@ -146,11 +147,16 @@ function content_profile_search_fields($check_access = TRUE) {
  *
  * @param $fields
  *   An array with field information.
+ * @param $show_type
+ *   A boolean that determines whether to append the content type name or not.
  */
-function content_profile_search_fields_options($fields) {
+function content_profile_search_fields_options($fields, $show_type = FALSE) {
   $options = array();
   foreach ($fields as $name => $field) {
     $options[$name] = $field['field_label'];
+    if ($show_type) {
+      $options[$name] .= ' (' . $field['type_name'] . ')';
+    }
   }
   return $options;
 }
@@ -171,7 +177,7 @@ function content_profile_search_form($form_state) {
   // Create a list of field names and labels the current user may access, which
   // we can feed into the form as an option list.
   $fields = content_profile_search_fields(TRUE);
-  $options = content_profile_search_fields_options($fields);
+  $options = content_profile_search_fields_options($fields, TRUE);
 
   $form['content_profile_search']['string'] = array(
     '#type' => 'textfield',
@@ -431,7 +437,7 @@ function content_profile_search_form_process($form_state) {
   $query .= ' GROUP BY u.uid';
 
   // Run the search.
-  $result = db_queryd($query, $args);
+  $result = db_query($query, $args);
 
   // Turn the result field login name into a link to the user account page.
   $data = array();
@@ -443,7 +449,7 @@ function content_profile_search_form_process($form_state) {
     if (count($nodes)) {
       foreach ($nodes as $node => $fields) {
         foreach ($fields as $field) {
-          if ($field['allowed_values']) {
+          if ($field['allowed_values'] && $row[$field['field_name'] . '_value']) {
             $row[$field['field_name'] . '_value'] = $field['allowed_values'][$row[$field['field_name'] . '_value']];
           }
         }
