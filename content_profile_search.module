@@ -354,25 +354,21 @@ function content_profile_search_form_process($form_state) {
   }
 
   // Always search login name and email address.
-  $query .= " WHERE (u.name LIKE '%%%s%%' OR u.mail LIKE '%%%s%%'";
+  $query .= " WHERE (u.name OR u.mail";
 
-  // For each field we're searching, add the string to the args array, so
-  // we can pass that into db_query later.
-  $args = array($string, $string);
-
-  // Foreach node type we're searching add an OR clause and add the string to $args.
+  // Foreach node type we're searching add an OR clause.
   if (count($nodes)) {
     foreach ($nodes as $node => $fields) {
       foreach ($fields as $field) {
         if ($field['multiple']) {
-          $query .= ' OR {content_' . $field['field_name'] .'}.'. $field['field_name'] . "_value LIKE '%%%s%%'";
+          $query .= ' OR {content_' . $field['field_name'] .'}.'. $field['field_name'] . "_value";
         }
         else {
-          $query .= ' OR {content_type_' . $node .'}.'. $field['field_name'] . "_value LIKE '%%%s%%'";
+          $query .= ' OR {content_type_' . $node .'}.'. $field['field_name'] . "_value";
         }
-        $args[] = $string;
       }
     }
+    $query .= " LIKE '%%%s%%'";
   }
 
   // And filter by role if required.
@@ -387,11 +383,8 @@ function content_profile_search_form_process($form_state) {
   // each `multiple' field value.
   $query .= ' GROUP BY u.uid';
 
-  // TODO: Parse the query and its args manually, as pager_query() doesn't
-  // accept an array of args as parameter. Ouch.
-
-  // Run the search with our array of args.
-  $result = db_query($query, $args);
+  // Run the search.
+  $result = db_query($query, $string);
 
   // Turn the result field login name into a link to the user account page.
   $data = array();
@@ -399,6 +392,9 @@ function content_profile_search_form_process($form_state) {
     $row['name'] = l($row['name'], 'user/' . $row['uid']);
     $data[] = $row;
   }
+
+  // TODO: If a field is processed PHP and has an index key, maybe eval() the code and
+  // display the associated value instead. That would be nice.
 
   // Warn the user if no returns were found and bypass the table data creation.
   if (!count($data)) {
