@@ -395,17 +395,21 @@ function content_profile_search_form_process($form_state) {
   // Create an array of arguments to be passed to db_query().
   $args = array();
 
-  // Create an array of placeholder elements for the search.
-  $placeholders = array_fill(0, count($items), '%s');
+  // Create an array of placeholder elements for the username part of the search.
+  $placeholders = array_fill(0, count($items), "u.name LIKE '%s'");
 
   // Always search login name.
-  $query .= " WHERE ((u.name LIKE '" . implode("' OR '", $placeholders) ."')";
+  $query .= " WHERE ((" . implode(" OR ", $placeholders) .")";
   $args = array_merge($args, $items);
+
+  // Create an array of placeholder elements for the email part of the search.
+  $placeholders = array_fill(0, count($items), "u.mail LIKE '%s'");
 
   // Always search email address.
-  $query .= " OR (u.mail LIKE '" . implode("' OR '", $placeholders) ."')";
+  $query .= " OR (" . implode(" OR ", $placeholders) .")";
   $args = array_merge($args, $items);
 
+  $placeholders = array_fill(0, count($items), "%s");
 
   // Foreach node type we're searching add a clause
   if (count($nodes)) {
@@ -426,12 +430,13 @@ function content_profile_search_form_process($form_state) {
           if ($field['allowed_values']) {
             if ($keys) {
               $keyholders = array_fill(0, count($keys), '%s');
-              $query .= ' %s ({content_' . $field['field_name'] .'}.'. $field['field_name'] . "_value IN ('" . implode("', '", $keyholders) . "'))";
+              $query .= ' %s ({content_' . $field['field_name'] . '}.' . $field['field_name'] . "_value IN ('" . implode("', '", $keyholders) . "'))";
               $args = array_merge($args, $bool, $keys);
             }
           }
           else {
-            $query .= ' %s ({content_' . $field['field_name'] .'}.'. $field['field_name'] . "_value LIKE '" . implode("' OR '", $placeholders) ."')";
+            $placeholders = array_fill(0, count($items), '{content_' . $field['field_name'] . '}.' . $field['field_name'] . "_value LIKE '%s'");
+            $query .= ' %s (' . implode(" OR ", $placeholders) .")";
             $args = array_merge($args, $bool, $items);
           }
         }
@@ -439,12 +444,13 @@ function content_profile_search_form_process($form_state) {
           if ($field['allowed_values']) {
             if ($keys) {
               $keyholders = array_fill(0, count($keys), '%s');
-              $query .= ' %s ({content_type_' . $node .'}.'. $field['field_name'] . "_value IN ('" . implode("', '", $keyholders) . "'))";
+              $query .= ' %s ({content_type_' . $node .'} .'. $field['field_name'] . "_value IN ('" . implode("', '", $keyholders) . "'))";
               $args = array_merge($args, $bool, $keys);
             }
           }
           else {
-            $query .= ' %s ({content_type_' . $node .'}.'. $field['field_name'] . "_value LIKE '". implode("' OR '", $placeholders) . "')";
+            $placeholders = array_fill(0, count($items), '{content_type_' . $node . '}.' . $field['field_name'] . "_value LIKE '%s'");
+            $query .= ' %s (' . implode(" OR ", $placeholders) .")";
             $args = array_merge($args, $bool, $items);
           }
         }
@@ -492,7 +498,8 @@ function content_profile_search_form_process($form_state) {
   $query .= tablesort_sql($header);
 
   // Run the search.
-  $result = db_query($query, $args);
+print($query);
+  $result = db_queryd($query, $args);
 
   // Turn the result field login name into a link to the user account page.
   $data = array();
