@@ -399,14 +399,14 @@ function content_profile_search_form_process($form_state) {
   $args = array();
 
   // Create an array of placeholder elements for the username part of the search.
-  $placeholders = array_fill(0, count($items), "u.name LIKE '%s'");
+  $placeholders = array_fill(0, count($items), "u.name LIKE '%%%s%%'");
 
   // Always search login name.
   $query .= " WHERE ((" . implode(" OR ", $placeholders) .")";
   $args = array_merge($args, $items);
 
   // Create an array of placeholder elements for the email part of the search.
-  $placeholders = array_fill(0, count($items), "u.mail LIKE '%s'");
+  $placeholders = array_fill(0, count($items), "u.mail LIKE '%%%s%%'");
 
   // Always search email address.
   $query .= " OR (" . implode(" OR ", $placeholders) .")";
@@ -438,7 +438,7 @@ function content_profile_search_form_process($form_state) {
             }
           }
           else {
-            $placeholders = array_fill(0, count($items), '{content_' . $field['field_name'] . '}.' . $field['field_name'] . "_value LIKE '%s'");
+            $placeholders = array_fill(0, count($items), '{content_' . $field['field_name'] . '}.' . $field['field_name'] . "_value LIKE '%%%s%%'");
             $query .= ' %s (' . implode(" OR ", $placeholders) .")";
             $args = array_merge($args, $bool, $items);
           }
@@ -452,7 +452,7 @@ function content_profile_search_form_process($form_state) {
             }
           }
           else {
-            $placeholders = array_fill(0, count($items), '{content_type_' . $node . '}.' . $field['field_name'] . "_value LIKE '%s'");
+            $placeholders = array_fill(0, count($items), '{content_type_' . $node . '}.' . $field['field_name'] . "_value LIKE '%%%s%%'");
             $query .= ' %s (' . implode(" OR ", $placeholders) .")";
             $args = array_merge($args, $bool, $items);
           }
