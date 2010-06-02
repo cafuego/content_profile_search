@@ -182,17 +182,19 @@ function content_profile_search_form($form_state) {
   $form['content_profile_search']['string'] = array(
     '#type' => 'textfield',
     '#title' => 'Search',
-    '#description' => t('Enter arbitrary text to search all checked content_profile fields for.'),
+    '#description' => t("Enter arbitrary text to search for in all checked content_profile fields and the user's username and email address."),
   );
+
   $form['content_profile_search']['boolean'] = array(
     '#type' => 'radios',
     '#description' => t('Boolean search option.'),
     '#options' => array(
-      'OR' => t('OR: At least one of the searched profile fields must contain one of the search terms.'),
-      'AND' => t('AND: All of the searched profile fields must contain at least one of the search terms.'),
+      'OR' => t('OR: At least one of the searched fields must contain one of the search terms.'),
+      'AND' => t('AND: All of the searched fields must contain at least one of the search terms.'),
     ),
     '#default_value' => empty($form_state['values']['boolean']) ? 'OR' : $form_state['values']['boolean'],
   );
+
   $form['content_profile_search']['filters'] = array(
     '#type' => 'fieldset',
     '#title' => 'Filters',
@@ -200,6 +202,7 @@ function content_profile_search_form($form_state) {
     '#collapsible' => TRUE,
     '#collapsed' => (variable_get('content_profile_search_filter_collapse', 0) == 1) ? TRUE : FALSE,
   );
+
   $form['content_profile_search']['filters']['fields'] = array(
     '#type' => 'checkboxes',
     '#title' => 'Search fields',
@@ -522,15 +525,19 @@ function content_profile_search_form_process($form_state) {
     $data[] = $row;
   }
 
+  // Reassemble the strings for UX purposes.
+  $string = implode('" ' . implode('', $bool) . ' "', $items);
+
   // Warn the user if no returns were found and bypass the table data creation.
   if (!count($data)) {
-    $string = implode('" ' . implode('', $bool) . ' "', $items);
     drupal_set_message(t('No users matching "@string" were found', array('@string' => $string)), 'warning');
     return '';
   }
+  else {
+    drupal_set_message(t('Found %users matching "@string"', array('%users' => format_plural(count($data), '1 user', '@count users'), '@string' => $string)));
+  }
 
   // TODO: Pager the results, sortable columns.
-
 
   return theme('table', $header, $data);
 }
