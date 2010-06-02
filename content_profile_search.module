@@ -498,8 +498,7 @@ function content_profile_search_form_process($form_state) {
   $query .= tablesort_sql($header);
 
   // Run the search.
-print($query);
-  $result = db_queryd($query, $args);
+  $result = db_query($query, $args);
 
   // Turn the result field login name into a link to the user account page.
   $data = array();
