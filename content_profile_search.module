@@ -184,6 +184,15 @@ function content_profile_search_form($form_state) {
     '#title' => 'Search',
     '#description' => t('Enter arbitrary text to search all checked content_profile fields for.'),
   );
+  $form['content_profile_search']['boolean'] = array(
+    '#type' => 'radios',
+    '#description' => t('Boolean search option.'),
+    '#options' => array(
+      'OR' => t('OR: At least one of the searched profile fields must contain one of the search terms.'),
+      'AND' => t('AND: All of the searched profile fields must contain at least one of the search terms.'),
+    ),
+    '#default_value' => empty($form_state['values']['boolean']) ? 'OR' : $form_state['values']['boolean'],
+  );
   $form['content_profile_search']['filters'] = array(
     '#type' => 'fieldset',
     '#title' => 'Filters',
@@ -296,8 +305,10 @@ function content_profile_search_form_process($form_state) {
   }
 
   // Turn the search string into an array of words, so we can do a boolean search.
-  //
   $items = split(' ', $form_state['values']['string']);
+
+  // Shorten the boolean search operator variable.
+  $bool = empty($form_state['values']['boolean']) ? array('OR') : array($form_state['values']['boolean']);
 
   // Parse fields that we need to search through.
   $field_list = array();
@@ -357,19 +368,19 @@ function content_profile_search_form_process($form_state) {
   // Join each content_profile node type via its owner uid.
   if (count($nodes)) {
     foreach ($nodes as $node => $fields) {
-      $query .= ' LEFT JOIN {node} AS n_' . $node . ' ON(n_' . $node . '.uid=u.uid AND n_' . $node . ".type='" . $node. "')";
+      $query .= ' LEFT JOIN {node} AS n_' . $node . ' ON (n_' . $node . '.uid=u.uid AND n_' . $node . ".type='" . $node. "')";
       foreach ($fields as $num => $field) {
         // Now need to if the field is a multi - if so, it has its own content_$field
         // table that needs joining, instead of the content_type_$node one.
         if ($field['multiple']) {
-          $query .= ' LEFT JOIN {content_' . $field['field_name'] . '} ON({content_' . $field['field_name'] . '}.nid=n_' . $node . '.nid)';
+          $query .= ' LEFT JOIN {content_' . $field['field_name'] . '} ON ({content_' . $field['field_name'] . '}.nid=n_' . $node . '.nid)';
         }
         else {
           // This is a bit ugly, but because we need to cycle through the node
           // types, we now need to make sure we don't join the content_type_$node
           // table twice and break the query.
           if (strpos($query, ' LEFT JOIN {content_type_' . $node . '}') === FALSE) {
-            $query .= ' LEFT JOIN {content_type_' . $node . '} ON({content_type_' . $node . '}.nid=n_' . $node . '.nid)';
+            $query .= ' LEFT JOIN {content_type_' . $node . '} ON ({content_type_' . $node . '}.nid=n_' . $node . '.nid)';
           }
         }
       }
@@ -378,7 +389,7 @@ function content_profile_search_form_process($form_state) {
 
   // If we need to filter by role...
   if (count($roles)) {
-    $query .= ' JOIN {users_roles} AS ur ON(u.uid=ur.uid)';
+    $query .= ' JOIN {users_roles} AS ur ON (u.uid=ur.uid)';
   }
 
   // Create an array of arguments to be passed to db_query().
@@ -389,14 +400,14 @@ function content_profile_search_form_process($form_state) {
 
   // Always search login name.
   $query .= " WHERE ((u.name LIKE '" . implode("' OR '", $placeholders) ."')";
-  $args += $items;
+  $args = array_merge($args, $items);
 
   // Always search email address.
   $query .= " OR (u.mail LIKE '" . implode("' OR '", $placeholders) ."')";
-  $args += $items;
+  $args = array_merge($args, $items);
 
 
-  // Foreach node type we're searching add an OR clause.
+  // Foreach node type we're searching add a clause
   if (count($nodes)) {
     foreach ($nodes as $node => $fields) {
       foreach ($fields as $field) {
@@ -415,26 +426,26 @@ function content_profile_search_form_process($form_state) {
           if ($field['allowed_values']) {
             if ($keys) {
               $keyholders = array_fill(0, count($keys), '%s');
-              $query .= ' OR ({content_' . $field['field_name'] .'}.'. $field['field_name'] . "_value IN ('" . implode("', '", $keyholders) . "'))";
-              $args += $keys;
+              $query .= ' %s ({content_' . $field['field_name'] .'}.'. $field['field_name'] . "_value IN ('" . implode("', '", $keyholders) . "'))";
+              $args = array_merge($args, $bool, $keys);
             }
           }
           else {
-            $query .= ' OR ({content_' . $field['field_name'] .'}.'. $field['field_name'] . "_value LIKE '" . implode("' OR '", $placeholders) ."')";
-            $args += $items;
+            $query .= ' %s ({content_' . $field['field_name'] .'}.'. $field['field_name'] . "_value LIKE '" . implode("' OR '", $placeholders) ."')";
+            $args = array_merge($args, $bool, $items);
           }
         }
         else {
           if ($field['allowed_values']) {
             if ($keys) {
               $keyholders = array_fill(0, count($keys), '%s');
-              $query .= ' OR ({content_type_' . $node .'}.'. $field['field_name'] . "_value IN ('" . implode("', '", $keyholders) . "'))";
-              $args += $keys;
+              $query .= ' %s ({content_type_' . $node .'}.'. $field['field_name'] . "_value IN ('" . implode("', '", $keyholders) . "'))";
+              $args = array_merge($args, $bool, $keys);
             }
           }
           else {
-            $query .= ' OR ({content_type_' . $node .'}.'. $field['field_name'] . "_value LIKE '". implode("' OR '", $placeholders) . "')";
-            $args += $items;
+            $query .= ' %s ({content_type_' . $node .'}.'. $field['field_name'] . "_value LIKE '". implode("' OR '", $placeholders) . "')";
+            $args = array_merge($args, $bool, $items);
           }
         }
       }
@@ -445,7 +456,7 @@ function content_profile_search_form_process($form_state) {
   if (count($roles)) {
     $roleholders = array_fill(0, count($roles), '%d');
     $query .= ') AND ur.rid IN(' . implode(', ', $roleholders) . ')';
-    $args += $roles;
+    $args = array_merge($args, $roles);
   }
   else {
     $query .= ')';
@@ -507,7 +518,8 @@ function content_profile_search_form_process($form_state) {
 
   // Warn the user if no returns were found and bypass the table data creation.
   if (!count($data)) {
-    drupal_set_message(t('No users matching "@string" were found', array('@string' => $form_state['values']['string'])), 'warning');
+    $string = implode('" ' . implode('', $bool) . ' "', $items);
+    drupal_set_message(t('No users matching "@string" were found', array('@string' => $string)), 'warning');
     return '';
   }
 
