@@ -388,7 +388,7 @@ function content_profile_search_form_process($form_state) {
   $placeholders = array_fill(0, count($items), '%s');
 
   // Always search login name.
-  $query .= " WHERE ((u.name LIKE '" . implode("' OR '", $placeholders) ."')"
+  $query .= " WHERE ((u.name LIKE '" . implode("' OR '", $placeholders) ."')";
   $args += $items;
 
   // Always search email address.
