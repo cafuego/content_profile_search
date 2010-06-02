@@ -1,5 +1,5 @@
 <?php
-// $Id: content_profile_search.module,v 1.8 2009/11/07 00:07:24 cafuego Exp $
+// $Id: content_profile_search.module,v 1.9 2010/06/02 04:40:13 cafuego Exp $
 
 /**
  * Implementation of hook_menu()
