@@ -424,8 +424,10 @@ function content_profile_search_form_process($form_state) {
           // to a value that matches $string.
           // For extra pretty, we do a replace back to the string after we've found results.
           foreach ($field['allowed_values'] as $key => $value) {
-            if (stristr($value, $string) !== FALSE) {
-              $keys[] = $key;
+            foreach ($items as $item) {
+              if (stripos($value, $item) !== FALSE) {
+                $keys[] = $key;
+              }
             }
           }
         }
